@@ -1,0 +1,283 @@
+PROBLEM STATEMENT:
+Design and implement a console-based Recruitment ATS to manage job postings, applications,
+and hiring workflow using OOP in Java.
+Requirements:
+1. Create at least 4 classes:
+o Job – jobId, title, dept, location, status.
+o Applicant – appId, name, email, experience, skills.
+o Application – mapping of applicant→job with stage, score, remarks.
+o ATSService – manages jobs, applicants, screening, scheduling.
+2. Each class must include:
+o ≥4 instance/static variables.
+o A constructor to initialize values.
+o ≥5 methods (getters/setters, apply(), advanceStage(), searchApplicants(),
+rankByScore()).
+3. Demonstrate OOPS Concepts:
+o Inheritance → specialized TechApplicant/NonTechApplicant extends Applicant.
+o Method Overloading → searchApplicants() by skill/years/keyword.
+o Method Overriding → custom evaluate() in specialized applicants.
+o Polymorphism → process all as Applicant references.
+o Encapsulation → protect scores and stages.
+4. Write a Main class (ATSAppMain) to test:
+o Post jobs, add applicants, accept applications.
+o Advance stages (Applied→Screening→Interview→Offer).
+o Print job pipeline and top candidates.
+
+SOURCE CODE:
+---ATSAPPMAINCLASS---
+package Javaproject;
+
+public class ATSAppMain {
+    public static void main(String[] args) {
+        ATSService service = new ATSService();
+
+        // Add Jobs
+        Job j1 = new Job(101, "Software Engineer", "IT", "Bangalore", "Open");
+        Job j2 = new Job(102, "HR Manager", "HR", "Chennai", "Open");
+        service.addJob(j1);
+        service.addJob(j2);
+
+        // Add Applicants
+        Applicant a1 = new TechApplicant(1, "Alice", "alice@mail.com", 3, "Java, Spring", "Java");
+        Applicant a2 = new NonTechApplicant(2, "Bob", "bob@mail.com", 5, "Recruitment, Payroll", "Management");
+
+        a1.evaluate(); a2.evaluate();
+        service.addApplicant(a1);
+        service.addApplicant(a2);
+
+        // Apply
+        service.apply(a1, j1);
+        service.apply(a2, j2);
+
+        // Print Jobs & Applicants
+        service.listJobs();
+        service.listApplicants();
+
+        // Print Applications
+        service.listApplications();
+
+        // Rank Candidates
+        service.rankByScore();
+    }
+}
+
+--ATSSERVICE CLASS--
+package Javaproject;
+
+import java.util.*;
+
+public class ATSService {
+    private List<Job> jobs = new ArrayList<>();
+    private List<Applicant> applicants = new ArrayList<>();
+    private List<Application> applications = new ArrayList<>();
+
+    // Job Management
+    public void addJob(Job job) { jobs.add(job); }
+    public void listJobs() { jobs.forEach(Job::printJobDetails); }
+
+    // Applicant Management
+    public void addApplicant(Applicant applicant) { applicants.add(applicant); }
+    public void listApplicants() { applicants.forEach(Applicant::printApplicant); }
+
+    // Search Applicants (Method Overloading)
+    public List<Applicant> searchApplicants(String skill) {
+        List<Applicant> result = new ArrayList<>();
+        for (Applicant a : applicants) {
+            if (a.getSkills().toLowerCase().contains(skill.toLowerCase())) result.add(a);
+        }
+        return result;
+    }
+
+    public List<Applicant> searchApplicants(int years) {
+        List<Applicant> result = new ArrayList<>();
+        for (Applicant a : applicants) {
+            if (a.getExperience() >= years) result.add(a);
+        }
+        return result;
+    }
+
+    public List<Applicant> searchApplicants(String keyword, boolean isNameSearch) {
+        List<Applicant> result = new ArrayList<>();
+        for (Applicant a : applicants) {
+            if (isNameSearch && a.getName().toLowerCase().contains(keyword.toLowerCase()))
+                result.add(a);
+            else if (!isNameSearch && a.getSkills().toLowerCase().contains(keyword.toLowerCase()))
+                result.add(a);
+        }
+        return result;
+    }
+
+    // Application Management
+    public void apply(Applicant applicant, Job job) {
+        Application app = new Application(applicant, job);
+        applications.add(app);
+    }
+
+    public void advanceApplication(Application app) {
+        app.advanceStage();
+    }
+
+    public void rankByScore() {
+        applicants.sort((a1, a2) -> Double.compare(a2.getScore(), a1.getScore()));
+        System.out.println("Top Candidates:");
+        applicants.forEach(Applicant::printApplicant);
+    }
+
+    public void listApplications() {
+        applications.forEach(Application::printApplication);
+    }
+}
+
+--APPLICATION CLASS----
+package Javaproject;
+
+public class Application {
+    private Applicant applicant;
+    private Job job;
+    private String stage; // Applied → Screening → Interview → Offer
+    private String remarks;
+
+    // Constructor
+    public Application(Applicant applicant, Job job) {
+        this.applicant = applicant;
+        this.job = job;
+        this.stage = "Applied";
+        this.remarks = "";
+    }
+
+    // Getters/Setters
+    public Applicant getApplicant() { return applicant; }
+    public Job getJob() { return job; }
+    public String getStage() { return stage; }
+    public String getRemarks() { return remarks; }
+
+    public void setRemarks(String remarks) { this.remarks = remarks; }
+
+    // Methods
+    public void advanceStage() {
+        switch (stage) {
+            case "Applied": stage = "Screening"; break;
+            case "Screening": stage = "Interview"; break;
+            case "Interview": stage = "Offer"; break;
+            default: stage = "Completed";
+        }
+    }
+
+    public void printApplication() {
+        System.out.println("AppID: " + applicant.getAppId() + " applied for JobID: " + job.getJobId() +
+                ", Stage: " + stage + ", Remarks: " + remarks);
+    }
+}
+
+--NONTECHAPPLICANT CLASS---
+package Javaproject;
+
+public class NonTechApplicant extends Applicant {
+    private String domainExpertise;
+
+    public NonTechApplicant(int appId, String name, String email, int experience, String skills, String domainExpertise) {
+        super(appId, name, email, experience, skills);
+        this.domainExpertise = domainExpertise;
+    }
+
+    @Override
+    public void evaluate() {
+        setScore(getExperience() * 2.5 + (domainExpertise.equalsIgnoreCase("Management") ? 8 : 0));
+    }
+}
+
+---TECHAPPLICANT CLASS----
+ package Javaproject;
+
+public class TechApplicant extends Applicant {
+    private String primaryLanguage;
+
+    public TechApplicant(int appId, String name, String email, int experience, String skills, String primaryLanguage) {
+        super(appId, name, email, experience, skills);
+        this.primaryLanguage = primaryLanguage;
+    }
+
+    @Override
+    public void evaluate() {
+        setScore(getExperience() * 3 + (getSkills().contains("Java") ? 10 : 0));
+    }
+}
+----APPLICANT CLASS----
+package Javaproject;
+
+public class Applicant {
+    private int appId;
+    private String name;
+    private String email;
+    private int experience; // in years
+    private String skills;
+    private double score; // Encapsulated
+
+    // Constructor
+    public Applicant(int appId, String name, String email, int experience, String skills) {
+        this.appId = appId;
+        this.name = name;
+        this.email = email;
+        this.experience = experience;
+        this.skills = skills;
+        this.score = 0.0;
+    }
+
+    // Getters/Setters
+    public int getAppId() { return appId; }
+    public String getName() { return name; }
+    public String getEmail() { return email; }
+    public int getExperience() { return experience; }
+    public String getSkills() { return skills; }
+    public double getScore() { return score; }
+
+    protected void setScore(double score) { this.score = score; } // Encapsulation
+
+    // Methods
+    public void printApplicant() {
+        System.out.println("ApplicantID: " + appId + ", Name: " + name +
+                ", Email: " + email + ", Exp: " + experience + " yrs, Skills: " + skills + ", Score: " + score);
+    }
+
+    // Overridable evaluate
+    public void evaluate() {
+        this.score = experience * 2; // Base scoring
+    }
+}
+-----JOB CLASS-----
+package Javaproject;
+
+public class Job {
+    private int jobId;
+    private String title;
+    private String dept;
+    private String location;
+    private String status; // Open, Closed, etc.
+
+    // Constructor
+    public Job(int jobId, String title, String dept, String location, String status) {
+        this.jobId = jobId;
+        this.title = title;
+        this.dept = dept;
+        this.location = location;
+        this.status = status;
+    }
+
+    // Getters & Setters
+    public int getJobId() { return jobId; }
+    public String getTitle() { return title; }
+    public String getDept() { return dept; }
+    public String getLocation() { return location; }
+    public String getStatus() { return status; }
+
+    public void setStatus(String status) { this.status = status; }
+    public void setLocation(String location) { this.location = location; }
+
+    // Methods
+    public void closeJob() { this.status = "Closed"; }
+    public void reopenJob() { this.status = "Open"; }
+    public void printJobDetails() {
+        System.out.println("JobID: " + jobId + ", Title: " + title + ", Dept: " + dept +
+                ", Location: " + location + ", Status: " + status);
+    }
+}
