@@ -1,0 +1,281 @@
+QUESTION:
+Problem Statement
+Create a Java console app to manage medicines, customers, prescriptions, sales,
+and regulatory checks.
+Class Requirements
+1. Medicine
+2. Customer
+3. Prescription
+4. PrescriptionItem
+5. Sale
+6. SaleDetail
+7. Pharmacist
+Business Rules
+1. Prescription medicines require a valid prescription before sale.
+2. Check stock before sale; update immediately after.
+3. Track expiry dates; do not sell expired stock.
+4. Each sale detail links directly to a medicine and (when required) a prescription
+item.
+5. Record pharmacist responsible for the sale.
+Console Interface Requirements
+Add Medicine / Add Customer / Add Prescription / Make Sale / Display
+Medicines / Exit
+Expected Output Behavior
+• Sale bill with regulated items flagged; expiry warnings; updated stock.
+Questions for Students:
+1. Draw the UML Class Diagram for the system.
+2. Implement the classes with the necessary data members and methods for
+system functionality and business rules.
+3. Use encapsulation, inheritance, aggregation, and polymorphism wherever
+required.
+4. Implement the main method for a menu-driven system
+
+
+ANSWER:(SOURCE CODE:)
+
+package rajasudha;
+import java.time.LocalDate;
+import java.util.*;
+class Medicine {
+ private int id;
+ private String name;
+ private double price;
+ private int quantity;
+ private LocalDate expiryDate;
+ private boolean prescriptionRequired;
+ public Medicine(int id, String name, double price, int quantity, LocalDate expiryDate,
+boolean prescriptionRequired) {
+ this.id = id;
+ this.name = name;
+ this.price = price;
+ this.quantity = quantity;
+ this.expiryDate = expiryDate;
+ this.prescriptionRequired = prescriptionRequired;
+ }
+ public boolean checkStock(int qty) {
+ return quantity >= qty;
+ }
+ public boolean isExpired() {
+ return expiryDate.isBefore(LocalDate.now());
+ }
+ public void reduceStock(int qty) {
+ quantity -= qty;
+ }
+ public String getName() {
+ return name;
+ }
+ public void display() {
+ System.out.println("Medicine: " + name + ", Stock: " + quantity + ", Expiry: " +
+expiryDate);
+ }
+}
+class Customer {
+ private int id;
+ private String name;
+ private int age;
+ private String contact;
+ public Customer(int id, String name, int age, String contact) {
+ this.id = id;
+ this.name = name;
+ this.age = age;
+ this.contact = contact;
+ }
+ public String getName() {
+ return name;
+ }
+ public void displayInfo() {
+ System.out.println("Customer: " + name + ", Age: " + age);
+ }
+}
+class PrescriptionItem {
+ private Medicine medicine;
+ private int quantity;
+ public PrescriptionItem(Medicine medicine, int quantity) {
+ this.medicine = medicine;
+ this.quantity = quantity;
+ }
+ public void displayItem() {
+ System.out.println(medicine.getName() + " x " + quantity);
+ }
+ public Medicine getMedicine() { return medicine; }
+ public int getQuantity() { return quantity; }
+}
+class Prescription {
+ private int id;
+ private Customer customer;
+ private List<PrescriptionItem> items = new ArrayList<>();
+ private LocalDate dateIssued;
+ public Prescription(int id, Customer customer) {
+ this.id = id;
+ this.customer = customer;
+ this.dateIssued = LocalDate.now();
+ }
+ public void addItem(PrescriptionItem item) {
+ items.add(item);
+ }
+ public void displayPrescription() {
+ System.out.println("Prescription for: " + customer.getName());
+ for (PrescriptionItem item : items) item.displayItem();
+ }
+ public List<PrescriptionItem> getItems() { return items; }
+}
+class SaleDetail {
+ private Medicine medicine;
+ private PrescriptionItem prescriptionItem;
+ private int quantity;
+ public SaleDetail(Medicine medicine, PrescriptionItem prescriptionItem, int quantity) {
+ this.medicine = medicine;
+ this.prescriptionItem = prescriptionItem;
+ this.quantity = quantity;
+ }
+ public void displayDetail() {
+ System.out.println(medicine.getName() + " x " + quantity +
+ (prescriptionItem != null ? " (Rx Required)" : ""));
+ }
+ public Medicine getMedicine() { return medicine; }
+ public int getQuantity() { return quantity; }
+}
+class Sale {
+ private int id;
+ private Customer customer;
+ private List<SaleDetail> saleDetails = new ArrayList<>();
+ private Pharmacist pharmacist;
+ private LocalDate date;
+ public Sale(int id, Customer customer, Pharmacist pharmacist) {
+ this.id = id;
+ this.customer = customer;
+ this.pharmacist = pharmacist;
+ this.date = LocalDate.now();
+ }
+ public void addSaleDetail(SaleDetail detail) {
+ saleDetails.add(detail);
+ detail.getMedicine().reduceStock(detail.getQuantity());
+ }
+ public void generateBill() {
+ System.out.println("Sale Bill for " + customer.getName());
+ for (SaleDetail detail : saleDetails) detail.displayDetail();
+ }
+}
+class Pharmacist {
+ private int id;
+ private String name;
+ public Pharmacist(int id, String name) {
+ this.id = id;
+ this.name = name;
+ }
+ public void displayInfo() {
+ System.out.println("Pharmacist: " + name);
+ }
+}
+public class PharmacyApp {
+ public static void main(String[] args) {
+ Scanner sc = new Scanner(System.in);
+ List<Medicine> medicines = new ArrayList<>();
+ List<Customer> customers = new ArrayList<>();
+> prescriptions = new ArrayList<>();
+ List<Pharmacist> pharmacists = new ArrayList<>();
+ pharmacists.add(new Pharmacist(1, "John"));
+ int choice;
+ do {
+ System.out.println("\n1. Add Medicine\n2. Add Customer\n3. Add Prescription\n4.
+Make Sale\n5. Display Medicines\n6. Exit");
+ choice = sc.nextInt();
+ sc.nextLine();
+ switch(choice) {
+ case 1:
+ System.out.print("Medicine Name: ");
+ String mname = sc.nextLine();
+ System.out.print("Price: ");
+ double price = sc.nextDouble();
+ System.out.print("Quantity: ");
+ int qty = sc.nextInt();
+ sc.nextLine();
+ System.out.print("Expiry (YYYY-MM-DD): ");
+ LocalDate exp = LocalDate.parse(sc.nextLine());
+ System.out.print("Prescription Required (true/false): ");
+ boolean rx = sc.nextBoolean();
+ medicines.add(new Medicine(medicines.size()+1, mname, price, qty, exp, rx));
+ break;
+ case 2:
+ System.out.print("Customer Name: ");
+ String cname = sc.nextLine();
+ System.out.print("Age: ");
+ int age = sc.nextInt();
+ sc.nextLine();
+ System.out.print("Contact: ");
+ String contact = sc.nextLine();
+ customers.add(new Customer(customers.size()+1, cname, age, contact));
+ break;
+ case 3:
+ System.out.print("Customer ID: ");
+ int custId = sc.nextInt();
+ sc.nextLine();
+ Customer cust = customers.stream().filter(c ->
+c.getName().equalsIgnoreCase(custId + "")).findFirst().orElse(null);
+ if (cust == null) {
+ System.out.println("Customer not found.");
+ break;
+ }
+ Prescription prescription = new Prescription(prescriptions.size()+1, cust);
+ System.out.print("Number of items: ");
+ int itemCount = sc.nextInt();
+ sc.nextLine();
+ for (int i = 0; i < itemCount; i++) {
+ System.out.print("Medicine ID: ");
+ int mid = sc.nextInt();
+ System.out.print("Quantity: ");
+ int quantity = sc.nextInt();
+ sc.nextLine();
+ Medicine med = medicines.stream().filter(m ->
+m.getName().equalsIgnoreCase(mid + "")).findFirst().orElse(null);
+ if (med != null) {
+ prescription.addItem(new PrescriptionItem(med, quantity));
+ } else {
+ System.out.println("Medicine not found.");
+ }
+ }
+ prescriptions.add(prescription);
+ break;
+ case 4:
+ System.out.print("Customer ID: ");
+ int saleCustId = sc.nextInt();
+ sc.nextLine();
+ Customer saleCust = customers.stream().filter(c ->
+c.getName().equalsIgnoreCase(saleCustId + "")).findFirst().orElse(null);
+ if (saleCust == null) {
+ System.out.println("Customer not found.");
+ break;
+ }
+ Pharmacist pharmacist = pharmacists.get(0); // default pharmacist
+ Sale sale = new Sale(1, saleCust, pharmacist);
+ System.out.print("Number of medicines to buy: ");
+ int saleItemCount = sc.nextInt();
+ sc.nextLine();
+ for (int i = 0; i < saleItemCount; i++) {
+ System.out.print("Medicine ID: ");
+ int mid = sc.nextInt();
+ System.out.print("Quantity: ");
+ int quantity = sc.nextInt();
+ sc.nextLine();
+ Medicine med = medicines.stream().filter(m ->
+m.getName().equalsIgnoreCase(mid + "")).findFirst().orElse(null);
+ if (med != null && med.checkStock(quantity) && !med.isExpired()) {
+ sale.addSaleDetail(new SaleDetail(med, null, quantity));
+ } else {
+ System.out.println("Medicine not available or expired.");
+ }
+ }
+ sale.generateBill();
+ break;
+ case 5:
+ for(Medicine m : medicines) m.display();
+ break;
+ case 6:
+ System.out.println("Exiting...");
+ break;
+ default:
+ System.out.println("Option not implemented yet!");
+ }
+ } while(choice != 6);
+ }
+}
